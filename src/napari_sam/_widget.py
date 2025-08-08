@@ -65,41 +65,58 @@ class SamWidget(QWidget):
         else:
             self.device = "cuda"
 
-        main_layout = QVBoxLayout()
 
-        # self.scroll_area = QScrollArea()
-        # self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        # self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        # self.scroll_area.setWidgetResizable(True)
+    # Remove duplicate code block outside __init__
+    def __init__(self, napari_viewer):
+        super().__init__()
+        self.viewer = napari_viewer
+
+        self.annotator_mode = AnnotatorMode.NONE
+        self.segmentation_mode = SegmentationMode.SEMANTIC
+
+        if not torch.cuda.is_available():
+            if not torch.backends.mps.is_available():
+                self.device = "cpu"
+            else:
+                self.device = "mps"
+        else:
+            self.device = "cuda"
+
+        # --- Refactored layout: two scrollable areas ---
+        main_layout = QVBoxLayout(self)
+
+        # Top scrollable area (2/3): model to mask config
+        top_widget = QWidget()
+        top_layout = QVBoxLayout(top_widget)
 
         self.layer_types = {"image": napari.layers.image.image.Image, "labels": napari.layers.labels.labels.Labels}
 
         l_model_type = QLabel("Select model type:")
-        main_layout.addWidget(l_model_type)
+        top_layout.addWidget(l_model_type)
 
         self.cb_model_type = QComboBox()
-        main_layout.addWidget(self.cb_model_type)
+        top_layout.addWidget(self.cb_model_type)
 
         self.btn_load_model = QPushButton("Load model")
         self.btn_load_model.clicked.connect(self._load_model)
-        main_layout.addWidget(self.btn_load_model)
+        top_layout.addWidget(self.btn_load_model)
         self.loaded_model = None
         self.init_model_type_combobox()
 
         l_image_layer = QLabel("Select input image layer:")
-        main_layout.addWidget(l_image_layer)
+        top_layout.addWidget(l_image_layer)
 
         self.cb_image_layers = QComboBox()
         self.cb_image_layers.addItems(self.get_layer_names("image"))
         self.cb_image_layers.currentTextChanged.connect(self.on_image_change)
-        main_layout.addWidget(self.cb_image_layers)
+        top_layout.addWidget(self.cb_image_layers)
 
         l_label_layer = QLabel("Select output labels layer:")
-        main_layout.addWidget(l_label_layer)
+        top_layout.addWidget(l_label_layer)
 
         self.cb_label_layers = QComboBox()
         self.cb_label_layers.addItems(self.get_layer_names("labels"))
-        main_layout.addWidget(self.cb_label_layers)
+        top_layout.addWidget(self.cb_label_layers)
 
         self.comboboxes = [{"combobox": self.cb_image_layers, "layer_type": "image"}, {"combobox": self.cb_label_layers, "layer_type": "labels"}]
 
@@ -116,15 +133,7 @@ class SamWidget(QWidget):
         self.l_annotation.addWidget(self.rb_click)
         self.rb_click.clicked.connect(self.on_everything_mode_checked)
 
-        # self.rb_bbox = QRadioButton("Bounding Box (WIP)")
-        # self.rb_bbox.setEnabled(False)
-        # self.rb_bbox.setToolTip("This mode is still Work In Progress (WIP)")
-        # self.rb_bbox.setStyleSheet("color: gray")
-        # self.l_annotation.addWidget(self.rb_bbox)
-
         self.rb_auto = QRadioButton("Everything")
-        # self.rb_auto.setEnabled(False)
-        # self.rb_auto.setStyleSheet("color: gray")
         self.rb_auto.setToolTip("Creates automatically an instance segmentation \n"
                                             "of the entire image.\n"
                                             "No user interaction possible.")
@@ -132,7 +141,7 @@ class SamWidget(QWidget):
         self.rb_auto.clicked.connect(self.on_everything_mode_checked)
 
         self.g_annotation.setLayout(self.l_annotation)
-        main_layout.addWidget(self.g_annotation)
+        top_layout.addWidget(self.g_annotation)
 
         self.g_segmentation = QGroupBox("Segmentation mode")
         self.l_segmentation = QVBoxLayout()
@@ -145,8 +154,6 @@ class SamWidget(QWidget):
                                  "should be given the same label by the user.\n \n"
                                  "The current label can be changed by the user \n"
                                  "on the labels layer pane after selecting the labels layer.")
-        # self.rb_semantic.setEnabled(False)
-        # self.rb_semantic.setStyleSheet("color: gray")
         self.l_segmentation.addWidget(self.rb_semantic)
 
         self.rb_instance = QRadioButton("Instance")
@@ -156,36 +163,34 @@ class SamWidget(QWidget):
                                  "but each object should be given a unique label by the user. \n \n"
                                  "The current label can be changed by the user \n"
                                  "on the labels layer pane after selecting the labels layer.")
-        # self.rb_instance.setEnabled(False)
-        # self.rb_instance.setStyleSheet("color: gray")
         self.l_segmentation.addWidget(self.rb_instance)
 
         self.rb_semantic.clicked.connect(self.on_segmentation_mode_changed)
         self.rb_instance.clicked.connect(self.on_segmentation_mode_changed)
 
         self.g_segmentation.setLayout(self.l_segmentation)
-        main_layout.addWidget(self.g_segmentation)
+        top_layout.addWidget(self.g_segmentation)
 
         self.btn_activate = QPushButton("Activate")
         self.btn_activate.clicked.connect(self._activate)
         self.btn_activate.setEnabled(False)
         self.is_active = False
-        main_layout.addWidget(self.btn_activate)
+        top_layout.addWidget(self.btn_activate)
 
         self.btn_mode_switch = QPushButton("Switch to BBox Mode")
         self.btn_mode_switch.clicked.connect(self._switch_mode)
         self.btn_mode_switch.setEnabled(False)
-        main_layout.addWidget(self.btn_mode_switch)
+        top_layout.addWidget(self.btn_mode_switch)
 
         self.check_prev_mask = QCheckBox('Use previous SAM prediction (recommended)')
         self.check_prev_mask.setEnabled(False)
         self.check_prev_mask.setChecked(True)
-        main_layout.addWidget(self.check_prev_mask)
+        top_layout.addWidget(self.check_prev_mask)
 
         self.check_auto_inc_bbox= QCheckBox('Auto increment bounding box label')
         self.check_auto_inc_bbox.setEnabled(False)
         self.check_auto_inc_bbox.setChecked(True)
-        main_layout.addWidget(self.check_auto_inc_bbox)
+        top_layout.addWidget(self.check_auto_inc_bbox)
 
         # --- Mask configuration UI (formerly HIF-extension) ---
         self.mask_config_group = QGroupBox("Mask configuration")
@@ -217,7 +222,15 @@ class SamWidget(QWidget):
         mask_config_layout.addLayout(file_save_layout)
 
         self.mask_config_group.setLayout(mask_config_layout)
-        main_layout.addWidget(self.mask_config_group)
+        top_layout.addWidget(self.mask_config_group)
+
+        top_scroll = QScrollArea()
+        top_scroll.setWidget(top_widget)
+        top_scroll.setWidgetResizable(True)
+
+        # Bottom scrollable area (1/3): everything after mask config
+        bottom_widget = QWidget()
+        bottom_layout = QVBoxLayout(bottom_widget)
 
         container_widget_info = QWidget()
         container_layout_info = QVBoxLayout(container_widget_info)
@@ -250,6 +263,44 @@ class SamWidget(QWidget):
         self.label_info_tooltip = QLabel("Every mode shows further information when hovered over.")
         self.label_info_tooltip.setWordWrap(True)
         self.l_info_tooltip.addWidget(self.label_info_tooltip)
+        self.g_info_tooltip.setLayout(self.l_info_tooltip)
+        container_layout_info.addWidget(self.g_info_tooltip)
+
+        self.g_info_contrast = QGroupBox("Contrast Limits")
+        self.l_info_contrast = QVBoxLayout()
+        self.label_info_contrast = QLabel("SAM computes its image embedding based on the current image contrast.\n"
+                                          "Image contrast can be adjusted with the contrast slider of the image layer.")
+        self.label_info_contrast.setWordWrap(True)
+        self.l_info_contrast.addWidget(self.label_info_contrast)
+        self.g_info_contrast.setLayout(self.l_info_contrast)
+        container_layout_info.addWidget(self.g_info_contrast)
+
+        self.g_info_click = QGroupBox("Click Mode")
+        self.l_info_click = QVBoxLayout()
+        self.label_info_click = QLabel("Positive Click: Middle Mouse Button\n \n"
+                                 "Negative Click: Control + Middle Mouse Button\n \n"
+                                 "Undo: Control + Z\n \n"
+                                 "Select Point: Left Click\n \n"
+                                 "Delete Selected Point: Delete\n \n"
+                                 "Pick Label: Control + Left Click\n \n"
+                                 "Increment Label: M\n \n")
+        self.label_info_click.setWordWrap(True)
+        self.l_info_click.addWidget(self.label_info_click)
+        self.g_info_click.setLayout(self.l_info_click)
+        container_layout_info.addWidget(self.g_info_click)
+
+        self.scroll_area_auto = self.init_auto_mode_settings()
+        container_layout_info.addWidget(self.scroll_area_auto)
+
+        bottom_layout.addWidget(container_widget_info)
+
+        bottom_scroll = QScrollArea()
+        bottom_scroll.setWidget(bottom_widget)
+        bottom_scroll.setWidgetResizable(True)
+
+        main_layout.addWidget(top_scroll, stretch=2)
+        main_layout.addWidget(bottom_scroll, stretch=1)
+        self.setLayout(main_layout)
         self.g_info_tooltip.setLayout(self.l_info_tooltip)
         container_layout_info.addWidget(self.g_info_tooltip)
 
