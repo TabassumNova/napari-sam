@@ -1,4 +1,4 @@
-from qtpy.QtWidgets import QVBoxLayout, QPushButton, QWidget, QLabel, QComboBox, QRadioButton, QGroupBox, QProgressBar, QApplication, QScrollArea, QLineEdit, QCheckBox
+from qtpy.QtWidgets import QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QLabel, QComboBox, QRadioButton, QGroupBox, QProgressBar, QApplication, QScrollArea, QLineEdit, QCheckBox
 from qtpy.QtGui import QIntValidator, QDoubleValidator
 from qtpy import QtCore
 from qtpy.QtCore import Qt
@@ -186,6 +186,38 @@ class SamWidget(QWidget):
         self.check_auto_inc_bbox.setEnabled(False)
         self.check_auto_inc_bbox.setChecked(True)
         main_layout.addWidget(self.check_auto_inc_bbox)
+
+        # --- Mask configuration UI (formerly HIF-extension) ---
+        self.mask_config_group = QGroupBox("Mask configuration")
+        mask_config_layout = QVBoxLayout()
+
+        # Mask label input
+        mask_label_layout = QHBoxLayout()
+        mask_label_label = QLabel("Mask label (array):")
+        self.mask_label_input = QLineEdit()
+        mask_label_layout.addWidget(mask_label_label)
+        mask_label_layout.addWidget(self.mask_label_input)
+        mask_config_layout.addLayout(mask_label_layout)
+
+        # Sample label input
+        sample_label_layout = QHBoxLayout()
+        sample_label_label = QLabel("Sample label:")
+        self.sample_label_input = QLineEdit()
+        sample_label_layout.addWidget(sample_label_label)
+        sample_label_layout.addWidget(self.sample_label_input)
+        mask_config_layout.addLayout(sample_label_layout)
+
+        # File format dropdown and save button
+        file_save_layout = QHBoxLayout()
+        self.mask_format_dropdown = QComboBox()
+        self.mask_format_dropdown.addItems(["numpy array", "header file"])
+        self.mask_save_button = QPushButton("Save file")
+        file_save_layout.addWidget(self.mask_format_dropdown)
+        file_save_layout.addWidget(self.mask_save_button)
+        mask_config_layout.addLayout(file_save_layout)
+
+        self.mask_config_group.setLayout(mask_config_layout)
+        main_layout.addWidget(self.mask_config_group)
 
         container_widget_info = QWidget()
         container_layout_info = QVBoxLayout(container_widget_info)
