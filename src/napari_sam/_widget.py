@@ -496,29 +496,19 @@ class SamWidget(QWidget):
                 if index >= 0:
                     combobox_dict["combobox"].setCurrentIndex(index)
 
-        # Inform all comboboxes on layer changes with the viewer.layer_change event
+        # Listen for inserted and removed events on the layers list
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=FutureWarning)
-            self.viewer.layers.events.changed.connect(self._on_layers_changed)
+            self.viewer.layers.events.inserted.connect(self._on_layers_changed)
+            self.viewer.layers.events.removed.connect(self._on_layers_changed)
 
-        # viewer.layer_change event does not inform about layer name changes, so we have to register a separate event to each layer and each layer that will be created
-
-        # Register an event to all existing layers
-        for layer_name in self.get_layer_names():
-            layer = self.viewer.layers[layer_name]
-
-            @layer.events.name.connect
-            def _on_rename(name_event):
-                self._on_layers_changed()
-
-        # Register an event to all layers that will be created
-        @self.viewer.layers.events.inserted.connect
-        def _on_insert(event):
-            layer = event.value
-
-            @layer.events.name.connect
-            def _on_rename(name_event):
-                self._on_layers_changed()
+        # Connect to name change for all existing layers
+        for layer in self.viewer.layers:
+            try:
+                layer.events.name.disconnect(self._on_layers_changed)
+            except Exception:
+                pass
+            layer.events.name.connect(self._on_layers_changed)
 
         self._init_comboboxes_callback()
 
@@ -531,6 +521,15 @@ class SamWidget(QWidget):
             index = combobox_dict["combobox"].findText(layer, QtCore.Qt.MatchFixedString)
             if index >= 0:
                 combobox_dict["combobox"].setCurrentIndex(index)
+
+        # Reconnect name event for all layers to ensure we catch renames
+        for layer in self.viewer.layers:
+            try:
+                layer.events.name.disconnect(self._on_layers_changed)
+            except Exception:
+                pass
+            layer.events.name.connect(self._on_layers_changed)
+
         self._on_layers_changed_callback()
 
     def get_layer_names(self, type="all", exclude_hidden=True):
