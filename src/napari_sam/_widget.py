@@ -243,6 +243,7 @@ class SamWidget(QWidget):
         validator = QIntValidator()
         validator.setRange(0, 9999)
         self.le_point_size = QLineEdit()
+        
         self.le_point_size.setText("1")
         self.le_point_size.setValidator(validator)
         self.l_size.addWidget(self.le_point_size)
@@ -303,39 +304,6 @@ class SamWidget(QWidget):
         self.setLayout(main_layout)
         self.g_info_tooltip.setLayout(self.l_info_tooltip)
         container_layout_info.addWidget(self.g_info_tooltip)
-
-        self.g_info_contrast = QGroupBox("Contrast Limits")
-        self.l_info_contrast = QVBoxLayout()
-        self.label_info_contrast = QLabel("SAM computes its image embedding based on the current image contrast.\n"
-                                          "Image contrast can be adjusted with the contrast slider of the image layer.")
-        self.label_info_contrast.setWordWrap(True)
-        self.l_info_contrast.addWidget(self.label_info_contrast)
-        self.g_info_contrast.setLayout(self.l_info_contrast)
-        container_layout_info.addWidget(self.g_info_contrast)
-
-        self.g_info_click = QGroupBox("Click Mode")
-        self.l_info_click = QVBoxLayout()
-        self.label_info_click = QLabel("Positive Click: Middle Mouse Button\n \n"
-                                 "Negative Click: Control + Middle Mouse Button\n \n"
-                                 "Undo: Control + Z\n \n"
-                                 "Select Point: Left Click\n \n"
-                                 "Delete Selected Point: Delete\n \n"
-                                 "Pick Label: Control + Left Click\n \n"
-                                 "Increment Label: M\n \n")
-        self.label_info_click.setWordWrap(True)
-        self.l_info_click.addWidget(self.label_info_click)
-        self.g_info_click.setLayout(self.l_info_click)
-        container_layout_info.addWidget(self.g_info_click)
-
-        scroll_area_info = QScrollArea()
-        scroll_area_info.setWidget(container_widget_info)
-        scroll_area_info.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        main_layout.addWidget(scroll_area_info)
-
-        self.scroll_area_auto = self.init_auto_mode_settings()
-        main_layout.addWidget(self.scroll_area_auto)
-
-        self.setLayout(main_layout)
 
         self.image_name = None
         self.image_layer = None
