@@ -1,4 +1,5 @@
 from qtpy.QtWidgets import QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QLabel, QComboBox, QRadioButton, QGroupBox, QProgressBar, QApplication, QScrollArea, QLineEdit, QCheckBox
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem
 from qtpy.QtGui import QIntValidator, QDoubleValidator
 from qtpy import QtCore
 from qtpy.QtCore import Qt
@@ -196,27 +197,10 @@ class SamWidget(QWidget):
         self.mask_config_group = QGroupBox("Mask configuration")
         mask_config_layout = QVBoxLayout()
 
-        # # Mask label input
-        # mask_label_layout = QHBoxLayout()
-        # mask_label_label = QLabel("Mask label (array):")
-        # self.mask_label_input = QLineEdit()
-        # mask_label_layout.addWidget(mask_label_label)
-        # mask_label_layout.addWidget(self.mask_label_input)
-        # mask_config_layout.addLayout(mask_label_layout)
-
-        # # Sample label input
-        # sample_label_layout = QHBoxLayout()
-        # sample_label_label = QLabel("Sample label:")
-        # self.sample_label_input = QLineEdit()
-        # sample_label_layout.addWidget(sample_label_label)
-        # sample_label_layout.addWidget(self.sample_label_input)
-        # mask_config_layout.addLayout(sample_label_layout)
-
         # --- Mask label table with scroll and user input ---
-        from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem
         self.mask_table = QTableWidget()
         self.mask_table.setColumnCount(2)
-        self.mask_table.setHorizontalHeaderLabels(["Mask label", "Sample label"])
+        self.mask_table.setHorizontalHeaderLabels(["Sample label", "Mask label"])
         self.mask_table.setEditTriggers(QTableWidget.AllEditTriggers)
         self.mask_table.setRowCount(10)  # Initial row count
         self.mask_table.verticalHeader().setVisible(False)
@@ -235,6 +219,7 @@ class SamWidget(QWidget):
         self.mask_format_dropdown = QComboBox()
         self.mask_format_dropdown.addItems(["numpy array", "header file"])
         self.mask_save_button = QPushButton("Save file")
+        self.mask_save_button.clicked.connect(self.on_save_mask_config)
         file_save_layout.addWidget(self.mask_format_dropdown)
         file_save_layout.addWidget(self.mask_save_button)
         mask_config_layout.addLayout(file_save_layout)
@@ -1435,6 +1420,37 @@ class SamWidget(QWidget):
                 cached_weight_types[model_type] = False
 
         return cached_weight_types
+    
+    def on_save_mask_config(self):
+        """
+        Collects the mask config table data into a dict and updates the label layer accordingly.
+        """
+        # Collect table data
+        table_data = {}
+        for row in range(self.mask_table.rowCount()):
+            sample_item = self.mask_table.item(row, 0)
+            mask_item = self.mask_table.item(row, 1)
+            # Make mask_label as a list of integers
+            mask_label = [int(x) for x in mask_item.text().split(',')] if mask_item else []
+            sample_label = sample_item.text() if sample_item else ''
+            if mask_label:
+                table_data[int(sample_label)] = mask_label
+
+        # Example: print or log the collected dict
+        print("Mask config table data:", table_data)
+
+        # Convert the data of label_layer according to table_data
+        # For each sample_label, remap all mask_label(s) in label_layer.data to sample_label
+        if self.label_layer is not None:
+            label_data = np.asarray(self.label_layer.data)
+            # Create a copy to avoid modifying in-place if not desired
+            new_label_data = label_data.copy()
+            for sample_label, mask_labels in table_data.items():
+                for mask_label in mask_labels:
+                    new_label_data[label_data == mask_label] = sample_label
+            self.label_layer.data = new_label_data
+            print("Label layer data remapped according to mask config table.")
+
 
     # def _myfilter(self, row, parent):
     #     return "<hidden>" not in self.viewer.layers[row].name
