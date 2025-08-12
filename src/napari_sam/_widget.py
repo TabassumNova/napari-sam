@@ -196,21 +196,39 @@ class SamWidget(QWidget):
         self.mask_config_group = QGroupBox("Mask configuration")
         mask_config_layout = QVBoxLayout()
 
-        # Mask label input
-        mask_label_layout = QHBoxLayout()
-        mask_label_label = QLabel("Mask label (array):")
-        self.mask_label_input = QLineEdit()
-        mask_label_layout.addWidget(mask_label_label)
-        mask_label_layout.addWidget(self.mask_label_input)
-        mask_config_layout.addLayout(mask_label_layout)
+        # # Mask label input
+        # mask_label_layout = QHBoxLayout()
+        # mask_label_label = QLabel("Mask label (array):")
+        # self.mask_label_input = QLineEdit()
+        # mask_label_layout.addWidget(mask_label_label)
+        # mask_label_layout.addWidget(self.mask_label_input)
+        # mask_config_layout.addLayout(mask_label_layout)
 
-        # Sample label input
-        sample_label_layout = QHBoxLayout()
-        sample_label_label = QLabel("Sample label:")
-        self.sample_label_input = QLineEdit()
-        sample_label_layout.addWidget(sample_label_label)
-        sample_label_layout.addWidget(self.sample_label_input)
-        mask_config_layout.addLayout(sample_label_layout)
+        # # Sample label input
+        # sample_label_layout = QHBoxLayout()
+        # sample_label_label = QLabel("Sample label:")
+        # self.sample_label_input = QLineEdit()
+        # sample_label_layout.addWidget(sample_label_label)
+        # sample_label_layout.addWidget(self.sample_label_input)
+        # mask_config_layout.addLayout(sample_label_layout)
+
+        # --- Mask label table with scroll and user input ---
+        from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem
+        self.mask_table = QTableWidget()
+        self.mask_table.setColumnCount(2)
+        self.mask_table.setHorizontalHeaderLabels(["Mask label", "Sample label"])
+        self.mask_table.setEditTriggers(QTableWidget.AllEditTriggers)
+        self.mask_table.setRowCount(10)  # Initial row count
+        self.mask_table.verticalHeader().setVisible(False)
+        self.mask_table.setMinimumHeight(200)
+        mask_config_layout.addWidget(self.mask_table)
+
+        self.mask_config_group.setLayout(mask_config_layout)
+        top_layout.addWidget(self.mask_config_group)
+
+        top_scroll = QScrollArea()
+        top_scroll.setWidget(top_widget)
+        top_scroll.setWidgetResizable(True)
 
         # File format dropdown and save button
         file_save_layout = QHBoxLayout()
@@ -221,12 +239,7 @@ class SamWidget(QWidget):
         file_save_layout.addWidget(self.mask_save_button)
         mask_config_layout.addLayout(file_save_layout)
 
-        self.mask_config_group.setLayout(mask_config_layout)
-        top_layout.addWidget(self.mask_config_group)
-
-        top_scroll = QScrollArea()
-        top_scroll.setWidget(top_widget)
-        top_scroll.setWidgetResizable(True)
+        
 
         # Bottom scrollable area (1/3): everything after mask config
         bottom_widget = QWidget()
