@@ -51,20 +51,22 @@ SAM_MODELS = {
 
 
 class SamWidget(QWidget):
-    def __init__(self, napari_viewer):
-        super().__init__()
-        self.viewer = napari_viewer
+    # def __init__(self, napari_viewer):
+    #     super().__init__()
+    #     self.viewer = napari_viewer
 
-        self.annotator_mode = AnnotatorMode.NONE
-        self.segmentation_mode = SegmentationMode.SEMANTIC
+    #     self.annotator_mode = AnnotatorMode.NONE
+    #     self.segmentation_mode = SegmentationMode.SEMANTIC
 
-        if not torch.cuda.is_available():
-            if not torch.backends.mps.is_available():
-                self.device = "cpu"
-            else:
-                self.device = "mps"
-        else:
-            self.device = "cuda"
+    #     self.output_path = 'mask_SAM'
+
+    #     if not torch.cuda.is_available():
+    #         if not torch.backends.mps.is_available():
+    #             self.device = "cpu"
+    #         else:
+    #             self.device = "mps"
+    #     else:
+    #         self.device = "cuda"
 
 
     # Remove duplicate code block outside __init__
@@ -74,6 +76,8 @@ class SamWidget(QWidget):
 
         self.annotator_mode = AnnotatorMode.NONE
         self.segmentation_mode = SegmentationMode.SEMANTIC
+
+        self.output_path = ''
 
         if not torch.cuda.is_available():
             if not torch.backends.mps.is_available():
@@ -110,6 +114,7 @@ class SamWidget(QWidget):
         self.cb_image_layers = QComboBox()
         self.cb_image_layers.addItems(self.get_layer_names("image"))
         self.cb_image_layers.currentTextChanged.connect(self.on_image_change)
+        self.cb_image_layers.currentTextChanged.connect(self.update_output_file_path)
         top_layout.addWidget(self.cb_image_layers)
 
         l_label_layer = QLabel("Select output labels layer:")
@@ -213,6 +218,17 @@ class SamWidget(QWidget):
         top_scroll = QScrollArea()
         top_scroll.setWidget(top_widget)
         top_scroll.setWidgetResizable(True)
+
+        # Add input for output file name
+        self.output_file_name = QLineEdit()
+        self.update_output_file_path()
+
+        # Output file label and input
+        output_file_layout = QHBoxLayout()
+        output_file_label = QLabel("Output file:")
+        output_file_layout.addWidget(output_file_label)
+        output_file_layout.addWidget(self.output_file_name)
+        mask_config_layout.addLayout(output_file_layout)
 
         # File format dropdown and save button
         file_save_layout = QHBoxLayout()
@@ -1451,6 +1467,38 @@ class SamWidget(QWidget):
             self.label_layer.data = new_label_data
             print("Label layer data remapped according to mask config table.")
 
+            # Save the label_layer in the output path with the selected format (numpy/header)
+            if hasattr(self, 'output_path') and self.label_layer is not None:
+                label_data = np.asarray(self.label_layer.data)
+                # Add an extra axis at the end
+                label_data = label_data[..., np.newaxis].astype(np.float32)
+                # transpose (1,0,2)
+                label_data = np.transpose(label_data, (1, 0, 2))
+                selected_format = self.mask_format_dropdown.currentText() if hasattr(self, 'mask_format_dropdown') else 'numpy'
+                output_file = self.output_path
+                if selected_format == 'numpy':
+                    # Save as .npy file
+                    np.save(output_file + '.npy', label_data)
+                    print(f"Label layer saved as numpy file: {output_file + '.npy'}")
+                elif selected_format == 'header file':
+                    # Save as .hdr and .img (ENVI format)
+                    try:
+                        from hylite import io, HyImage
+                    except ImportError:
+                        print("Hylite package not found. Please install it to save in header format.")
+                        return
+                    hyimg = HyImage(label_data)
+                    io.save(output_file + '.hdr', hyimg)
+                    print(f"Label layer saved as ENVI header file: {output_file + '.hdr'}")
+                else:
+                    print(f"Unknown file format selected: {selected_format}")
 
-    # def _myfilter(self, row, parent):
-    #     return "<hidden>" not in self.viewer.layers[row].name
+    def update_output_file_path(self):
+        image_layer_name = self.cb_image_layers.currentText()
+        if image_layer_name and image_layer_name in self.viewer.layers:
+            image_layer = self.viewer.layers[image_layer_name]
+            if hasattr(image_layer, 'source') and image_layer.source:
+                image_path = image_layer.source.path if hasattr(image_layer.source, 'path') else str(image_layer.source)
+                base_folder = os.path.dirname(image_path)
+                self.output_path = os.path.join(base_folder, "mask_SAM")
+        self.output_file_name.setText(self.output_path)
