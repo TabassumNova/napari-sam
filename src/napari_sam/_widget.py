@@ -233,7 +233,7 @@ class SamWidget(QWidget):
         # File format dropdown and save button
         file_save_layout = QHBoxLayout()
         self.mask_format_dropdown = QComboBox()
-        self.mask_format_dropdown.addItems(["numpy array", "header file"])
+        self.mask_format_dropdown.addItems(["numpy array", "ENVI file"])
         self.mask_save_button = QPushButton("Save file")
         self.mask_save_button.clicked.connect(self.on_save_mask_config)
         file_save_layout.addWidget(self.mask_format_dropdown)
@@ -1471,24 +1471,30 @@ class SamWidget(QWidget):
             if hasattr(self, 'output_path') and self.label_layer is not None:
                 label_data = np.asarray(self.label_layer.data)
                 # Add an extra axis at the end
-                label_data = label_data[..., np.newaxis].astype(np.float32)
+                label_data0 = label_data[..., np.newaxis].astype(np.float32)
                 # transpose (1,0,2)
-                label_data = np.transpose(label_data, (1, 0, 2))
+                label_data = np.transpose(label_data0, (1, 0, 2))
                 selected_format = self.mask_format_dropdown.currentText() if hasattr(self, 'mask_format_dropdown') else 'numpy'
                 output_file = self.output_path
                 if selected_format == 'numpy':
                     # Save as .npy file
                     np.save(output_file + '.npy', label_data)
                     print(f"Label layer saved as numpy file: {output_file + '.npy'}")
-                elif selected_format == 'header file':
+                elif selected_format == 'ENVI file':
                     # Save as .hdr and .img (ENVI format)
                     try:
-                        from hylite import io, HyImage
+                        import spectral
                     except ImportError:
-                        print("Hylite package not found. Please install it to save in header format.")
+                        print("Spectral package not found. Please install it to save in header format.")
                         return
-                    hyimg = HyImage(label_data)
-                    io.save(output_file + '.hdr', hyimg)
+                    spectral.io.envi.save_image(
+                                            output_file + '.hdr',      # Header file path
+                                            label_data0,
+                                            interleave='bsq',       # Typical ENVI format
+                                            force=True,
+                                            ext='.dat'              # Set data file extension
+                                        )
+
                     print(f"Label layer saved as ENVI header file: {output_file + '.hdr'}")
                 else:
                     print(f"Unknown file format selected: {selected_format}")
