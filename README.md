@@ -1,4 +1,19 @@
-# Segment Anything Model (SAM) in Napari
+# napari-sam Extension 
+
+This workflow aims to enhance the annotation process of [napari-sam](https://github.com/MIC-DKFZ/napari-sam). In the current plugin, when multiple objects are selected under the same label, it defaults to selecting the larger mask. This repository addresses and resolves that issue.
+
+## Extension Usage
+    python -m pip install "napari[all]"
+    pip install git+https://github.com/facebookresearch/segment-anything.git
+    pip install git+https://github.com/TabassumNova/napari-sam.git
+
+
+
+[![Watch the video](https://img.youtube.com/vi/UgYudrQhd6Q/maxresdefault.jpg)](https://www.youtube.com/watch?v=UgYudrQhd6Q)
+
+
+
+<!-- # Segment Anything Model (SAM) in Napari
 
 [![License Apache Software License 2.0](https://img.shields.io/pypi/l/napari-sam.svg?color=green)](https://github.com/MIC-DKFZ/napari-sam/raw/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/napari-sam.svg?color=green)](https://pypi.org/project/napari-sam)
@@ -92,13 +107,17 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [napari]: https://github.com/napari/napari
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/
-[PyPI]: https://pypi.org/
+[PyPI]: https://pypi.org/ -->
 
 # Acknowledgements
-<img src="https://github.com/MIC-DKFZ/napari-sam/raw/main/HI_Logo.png" height="100px" />
+<!-- <img src="https://github.com/MIC-DKFZ/napari-sam/raw/main/HI_Logo.png" height="100px" />
 
-<img src="https://github.com/MIC-DKFZ/napari-sam/raw/main/dkfz_logo.png" height="100px" />
+<img src="https://github.com/MIC-DKFZ/napari-sam/raw/main/dkfz_logo.png" height="100px" /> -->
 
-napari-sam is developed and maintained by the Applied Computer Vision Lab (ACVL) of [Helmholtz Imaging](http://helmholtz-imaging.de) 
+- [napari-sam](https://github.com/MIC-DKFZ/napari-sam) is developed and maintained by the Applied Computer Vision Lab (ACVL) of [Helmholtz Imaging](http://helmholtz-imaging.de) 
 and the [Division of Medical Image Computing](https://www.dkfz.de/en/mic/index.php) at the 
 [German Cancer Research Center (DKFZ)](https://www.dkfz.de/en/index.html).
+
+- This napari-sam Extension is developed at the Exploration department [Helmholtz Institute Freiberg for Resource Technology (HIF)](https://www.hzdr.de/db/Cms?pOid=32948&pNid=2423&pLang=de).
+
+
