@@ -3,9 +3,9 @@
 This workflow aims to enhance the annotation process of [napari-sam](https://github.com/MIC-DKFZ/napari-sam). In the current plugin, when multiple objects are selected under the same label, it defaults to selecting the larger mask. This repository addresses and resolves that issue.
 
 ## Extension Usage
-    python -m pip install "napari[all]"
+    pip install "napari[all]"
     pip install git+https://github.com/facebookresearch/segment-anything.git
-    pip install git+https://github.com/TabassumNova/napari-sam.git
+    pip install git+https://github.com/TabassumNova/napari-sam.git@Extension
 
 
 
