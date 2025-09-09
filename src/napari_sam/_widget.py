@@ -211,6 +211,8 @@ class SamWidget(QWidget):
         self.mask_table.verticalHeader().setVisible(False)
         self.mask_table.setMinimumHeight(200)
         mask_config_layout.addWidget(self.mask_table)
+        # TODO
+        # Add mask index in the initial column
 
         self.mask_config_group.setLayout(mask_config_layout)
         top_layout.addWidget(self.mask_config_group)
@@ -1447,7 +1449,7 @@ class SamWidget(QWidget):
             sample_item = self.mask_table.item(row, 0)
             mask_item = self.mask_table.item(row, 1)
             # Make mask_label as a list of integers
-            mask_label = [int(x) for x in mask_item.text().split(',')] if mask_item else []
+            mask_label = [int(x) for x in mask_item.text().split(',') if x.strip() != ''] if mask_item else []
             sample_label = sample_item.text() if sample_item else ''
             if mask_label:
                 table_data[int(sample_label)] = mask_label
