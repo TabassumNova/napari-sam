@@ -22,6 +22,7 @@ import urllib.request
 from pathlib import Path
 import os
 from os.path import join
+import re
 
 
 class AnnotatorMode(Enum):
@@ -1449,7 +1450,18 @@ class SamWidget(QWidget):
             sample_item = self.mask_table.item(row, 0)
             mask_item = self.mask_table.item(row, 1)
             # Make mask_label as a list of integers
-            mask_label = [int(x) for x in mask_item.text().split(',') if x.strip() != ''] if mask_item else []
+            mask_label = []
+            if mask_item:
+                mask_text = mask_item.text().strip()
+                # Regex for range like (1-4)
+                range_match = re.match(r"\(?(\d+)-(\d+)\)?", mask_text)
+                if range_match:
+                    start = int(range_match.group(1))
+                    end = int(range_match.group(2))
+                    mask_label = list(range(start, end + 1))
+                else:
+                    # Previous regex: comma separated values
+                    mask_label = [int(x) for x in mask_text.split(',') if x.strip() != '']
             sample_label = sample_item.text() if sample_item else ''
             if mask_label:
                 table_data[int(sample_label)] = mask_label
