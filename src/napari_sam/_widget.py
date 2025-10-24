@@ -10,6 +10,8 @@ from collections import deque, defaultdict
 import inspect
 from segment_anything import SamPredictor, build_sam_vit_h, build_sam_vit_l, build_sam_vit_b
 from segment_anything.automatic_mask_generator import SamAutomaticMaskGenerator
+from sam2.build_sam import build_sam2
+from sam2.sam2_image_predictor import SAM2ImagePredictor
 from napari_sam.utils import normalize
 import torch
 from vispy.util.keys import CONTROL
@@ -48,6 +50,10 @@ SAM_MODELS = {
     "vit_l": {"filename": "sam_vit_l_0b3195.pth", "url": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth", "model": build_sam_vit_l},
     "vit_b": {"filename": "sam_vit_b_01ec64.pth", "url": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth", "model": build_sam_vit_b},
     "MedSAM": {"filename": "sam_vit_b_01ec64_medsam.pth", "url": "https://syncandshare.desy.de/index.php/s/yLfdFbpfEGSHJWY/download/medsam_20230423_vit_b_0.0.1.pth", "model": build_sam_vit_b},
+    "sam2_tiny": {"filename": "sam2.1_hiera_tiny.pt", "url": "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt", "config":"configs/sam2.1/sam2.1_hiera_t.yaml", "model": build_sam2},
+    "sam2_small": {"filename": "sam2.1_hiera_small.pt", "url": "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt", "config":"configs/sam2.1/sam2.1_hiera_s.yaml", "model": build_sam2},
+    "sam2_basePlus": {"filename": "sam2.1_hiera_base_plus.pt", "url": "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt", "config":"configs/sam2.1/sam2.1_hiera_b+.yaml", "model": build_sam2},
+    "sam2_large": {"filename": "sam2.1_hiera_large.pt", "url": "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt", "config":"configs/sam2.1/sam2.1_hiera_l.yaml", "model": build_sam2},
 }
 
 
@@ -322,6 +328,7 @@ class SamWidget(QWidget):
         self.g_info_tooltip.setLayout(self.l_info_tooltip)
         container_layout_info.addWidget(self.g_info_tooltip)
 
+        self.model_type = None
         self.image_name = None
         self.image_layer = None
         self.label_layer = None
@@ -627,13 +634,21 @@ class SamWidget(QWidget):
         self.cb_model_type.setEnabled(False)
         self.btn_load_model.setEnabled(False)
         model_types = list(SAM_MODELS.keys())
-        model_type = model_types[self.cb_model_type.currentIndex()]
-        self.sam_model = SAM_MODELS[model_type]["model"](
-            self.get_weights_path(model_type)
-        )
-        self.sam_model.to(self.device)
-        self.sam_predictor = SamPredictor(self.sam_model)
-        self.loaded_model = model_type
+        self.model_type = model_types[self.cb_model_type.currentIndex()]
+
+        if "sam2" in self.model_type:
+            model_cfg = SAM_MODELS[self.model_type]["config"]
+            self.sam_model = SAM_MODELS[self.model_type]["model"](model_cfg,
+                self.get_weights_path(self.model_type), device=self.device
+            )
+            self.sam_predictor = SAM2ImagePredictor(self.sam_model)
+        else:
+            self.sam_model = SAM_MODELS[self.model_type]["model"](
+                self.get_weights_path(self.model_type)
+            )
+            self.sam_model.to(self.device)
+            self.sam_predictor = SamPredictor(self.sam_model)
+        self.loaded_model = self.model_type
         self.update_model_type_combobox()
         self.cb_model_type.setEnabled(True)
         self.btn_load_model.setEnabled(True)
@@ -953,7 +968,7 @@ class SamWidget(QWidget):
                 contrast_limits = self.image_layer.contrast_limits
                 image = normalize(image, source_limits=contrast_limits, target_limits=(0, 255)).astype(np.uint8)
             self.sam_predictor.set_image(image)
-            self.sam_features = self.sam_predictor.features
+            self.sam_features = self.sam_predictor._features if "sam2" in self.model_type else self.sam_predictor.features
         elif self.image_layer.ndim == 3:
             l_creating_features= QLabel("Creating SAM image embedding:")
             self.layout().addWidget(l_creating_features)
@@ -970,7 +985,7 @@ class SamWidget(QWidget):
                 contrast_limits = self.image_layer.contrast_limits
                 image_slice = normalize(image_slice, source_limits=contrast_limits, target_limits=(0, 255)).astype(np.uint8)
                 self.sam_predictor.set_image(image_slice)
-                self.sam_features.append(self.sam_predictor.features)
+                self.sam_features.append(self.sam_predictor.features) # TODO: Changes needed for sam2 model
                 progress_bar.setValue(index+1)
                 QApplication.processEvents()
                 progress_bar.deleteLater()
@@ -1091,7 +1106,7 @@ class SamWidget(QWidget):
     def predict_sam(self, points, labels, bbox, x_coord=None):
         if self.image_layer.ndim == 2:
             if points is not None:
-                points = np.flip(points, axis=-1)
+                points = np.flip(points, axis=-1).copy()
                 labels = np.asarray(labels)
             if bbox is not None:
                 top_left_coord, bottom_right_coord = self.find_corners(bbox)
